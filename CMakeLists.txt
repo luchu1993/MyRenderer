@@ -10,6 +10,7 @@ set(HEADERS
     Source/Core/Camera.h
     Source/Core/Mesh.h
     Source/Core/Graphics.h
+    Source/Core/Texture.h
     Source/Math/Math.h
     Source/Math/Matrix.h
     Source/Math/Quat.h
@@ -27,6 +28,7 @@ set(SOURCES
     Source/Core/Camera.cpp
     Source/Core/Mesh.cpp
     Source/Core/Graphics.cpp
+    Source/Core/Texture.cpp
     Source/Math/Math.cpp
     Source/Math/Matrix.cpp
     Source/Math/Vector.cpp

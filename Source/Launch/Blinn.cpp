@@ -18,7 +18,10 @@ void Blinn::Initialize()
     Platform::Get().OpenWindow(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
     framebuffer_ = new Framebuffer(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-
+    Platform::Get().RegisterKeyCallback([](const KeyCode& key, bool pressed)
+    {
+        Platform::Get().SetWindowShouldClose(key == KEY_ESCAPE);
+    });
 }
 
 void Blinn::MainLoop()
@@ -43,7 +46,7 @@ void Blinn::MainLoop()
         frameCount += 1;
         prevTime = currentTime;
 
-        PollEvents();
+        Platform::Get().PollInputEvents();
     }
 }
 
@@ -58,11 +61,6 @@ void Blinn::RenderOneFrame(const FrameInfo &frameInfo)
 }
 
 void Blinn::Present()
-{
-
-}
-
-void Blinn::PollEvents()
 {
 
 }

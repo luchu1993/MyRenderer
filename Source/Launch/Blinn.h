@@ -21,11 +21,7 @@ public:
 
 private:
     void RenderOneFrame(const FrameInfo& frameInfo);
-
     void Present();
-
-    void PollEvents();
-
     void Update();
 
 private:

@@ -20,10 +20,7 @@
     static const char *const WINDOW_ENTRY_NAME = "Entry";
 #endif
 
-static LRESULT CALLBACK ProcessWndMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    return DefWindowProc(hWnd, uMsg, wParam, lParam);
-}
+static LRESULT CALLBACK ProcessWndMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 static void RegisterWindowClass()
 {
@@ -135,9 +132,53 @@ public:
     void SetShouldClose(bool shouldClose) { shouldClose_ = shouldClose; }
     bool ShouldClose() const { return shouldClose_; }
 
-    void KeyCallback(KeyCode key, bool pressed) {}
-    void ButtonCallback(Button button, bool pressed) {}
-    void ScrollCallback(float offset) {}
+    void HandleKeyMessage(WPARAM virtualKey, bool pressed)
+    {
+        KeyCode key;
+        switch (virtualKey)
+        {
+            case 'A': key = KEY_A; break;
+            case 'D': key = KEY_D; break;
+            case 'W': key = KEY_W; break;
+            case 'S': key = KEY_S; break;
+            case VK_SPACE: key = KEY_SPACE; break;
+            case VK_ESCAPE: key= KEY_ESCAPE; break;
+            default: key = KEY_NUM; break;
+        }
+
+        if (key < KEY_NUM)
+        {
+            keys_[key] = pressed;
+            auto const& callbacks = Platform::Get().keycallbacks_;
+            if (!callbacks.empty())
+            {
+                for (auto const& cb : callbacks)
+                    cb(key, pressed);
+            }
+        }
+    }
+
+    void HandleButtonMessage(Button button, bool pressed)
+    {
+        buttons_[button] = pressed;
+
+        auto const& callbacks = Platform::Get().buttoncallbacks_;
+        if (!callbacks.empty())
+        {
+            for (auto const& cb : callbacks)
+                cb(button, pressed);
+        }
+    }
+
+    void HandleScrollMessage(float offset)
+    {
+        auto const& callbacks = Platform::Get().scrollcallbacks_;
+        if (!callbacks.empty())
+        {
+            for (auto const& cb : callbacks)
+                cb(offset);
+        }
+    }
 
 private:
 
@@ -184,9 +225,15 @@ void Platform::OpenWindow(const char* title, int width, int height)
     window_ = new Window(title, width, height);
 }
 
-bool Platform::WindowShouldClose()
+bool Platform::WindowShouldClose() const
 {
     return window_ && window_->ShouldClose();
+}
+
+void Platform::SetWindowShouldClose(bool close)
+{
+    if (window_)
+        window_->SetShouldClose(true);
 }
 
 float Platform::GetTime()
@@ -196,4 +243,61 @@ float Platform::GetTime()
         initialTime_ = GetNativeTime();
     }
     return (float)(GetNativeTime() - initialTime_);
+}
+
+void Platform::PollInputEvents()
+{
+    MSG message;
+    while (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE))
+    {
+        TranslateMessage(&message);
+        DispatchMessage(&message);
+    }
+}
+
+static LRESULT CALLBACK ProcessWndMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    Window* window = Platform::Get().GetWindow();
+    if (window == nullptr)
+    {
+        return DefWindowProc(hWnd, uMsg, wParam, lParam);
+    }
+
+    switch (uMsg)
+    {
+        case WM_CLOSE:
+            window->SetShouldClose(true);
+            return 0;
+
+        case WM_KEYDOWN:
+            window->HandleKeyMessage(wParam, true);
+            return 0;
+
+        case WM_KEYUP:
+            window->HandleKeyMessage(wParam, false);
+            return 0;
+
+        case WM_LBUTTONDOWN:
+            window->HandleButtonMessage(BUTTON_L, true);
+            return 0;
+
+        case WM_RBUTTONDOWN:
+            window->HandleButtonMessage(BUTTON_R, true);
+            return 0;
+
+        case WM_LBUTTONUP:
+            window->HandleButtonMessage(BUTTON_L, false);
+            return 0;
+
+        case WM_RBUTTONUP:
+            window->HandleButtonMessage(BUTTON_R, false);
+            return 0;
+
+        case WM_MOUSEHWHEEL:
+            float offset = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+            window->HandleScrollMessage(offset);
+            return 0;
+    }
+
+    return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }

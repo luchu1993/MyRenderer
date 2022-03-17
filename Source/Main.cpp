@@ -1,5 +1,3 @@
-
-#include <memory>
 #include "Core/Api.h"
 #include "Launch/Blinn.h"
 
